@@ -1,9 +1,13 @@
 #include <stdio.h>
+#include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
+#include "esp_err.h"
+#include "nvs_flash.h"
 #include "cJSON.h"
 #include "driver/gpio.h"
+#include "driver/adc.h"
 
 // Componentes Propios
 #include "wifi_portal.h"    // (Del repo original)
@@ -38,8 +42,8 @@ void diagnostico_inteligente() {
     // El hielo actúa de aislante térmico.
     if (g_temp_serp < TEMP_SERP_CONGELADA && g_temp_aire > TEMP_AIRE_ALTA) {
         ESP_LOGE(TAG, "!!! ALERTA CRÍTICA: BLOQUEO POR HIELO DETECTADO !!!");
-        if (mqtt_is_connected()) {
-             mqtt_publish("gaddbar/heladera/alerta", "{\"msg\": \"BLOQUEO_HIELO\", \"prioridad\": \"ALTA\"}");
+           if (mqtt_app_is_connected()) {
+               mqtt_app_publish("gaddbar/heladera/alerta", "{\"msg\": \"BLOQUEO_HIELO\", \"prioridad\": \"ALTA\"}");
         }
     }
 
@@ -91,7 +95,7 @@ void task_sensores(void *pvParameters) {
         diagnostico_inteligente();
 
         // Enviar MQTT
-        if (mqtt_is_connected()) {
+        if (mqtt_app_is_connected()) {
             cJSON *json = cJSON_CreateObject();
             cJSON_AddNumberToObject(json, "t_aire", g_temp_aire);
             cJSON_AddNumberToObject(json, "t_serp", g_temp_serp);
@@ -99,7 +103,7 @@ void task_sensores(void *pvParameters) {
             cJSON_AddNumberToObject(json, "amp", g_corriente);
             
             char *payload = cJSON_PrintUnformatted(json);
-            mqtt_publish("gaddbar/heladera/telemetria", payload);
+            mqtt_app_publish("gaddbar/heladera/telemetria", payload);
             
             free(payload);
             cJSON_Delete(json);
@@ -124,7 +128,7 @@ void app_main(void) {
 
     // Iniciar WiFi y MQTT (Usando tus módulos existentes)
     wifi_portal_init(); 
-    mqtt_connector_start();
+    mqtt_app_start();
 
     // Crear Tarea de Sensores en el Core 1 (Application Core)
     xTaskCreatePinnedToCore(task_sensores, "Task_Sensores", 4096, NULL, 5, NULL, 1);
