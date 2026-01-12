@@ -76,3 +76,16 @@ Desktop.ini
 *.workspace # General workspace files, can be from various tools
 *.suo       # Visual Studio Solution User Options
 *.sln.docstates # Visual Studio
+
+# VSCode specific
+.vscode/
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+*.code-workspace
+
+# Project specific ignores
+.idf_build_monitor
+.idf/
+openocd_cfg/
+dfu_dist/
